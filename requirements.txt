@@ -1,0 +1,6 @@
+SQLAlchemy
+python-dotenv
+click
+rich
+pytz
+tzlocal
