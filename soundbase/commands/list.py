@@ -40,34 +40,39 @@ def list_media():
     """
     List all media entries in the database.
 
-    This function retrieves all the media entries from the database and displays them in a readable
-    format, showing the URL and associated source information.
+    Retrieves all media entries from the database and displays them in a structured format,
+    utilizing the `print_on_screen()` method from the Media model.
     """
-    media_entries = session.query(Media).all()
+    try:
+        media_entries = session.query(Media).order_by(Media.added_on).all()
 
-    if not media_entries:
-        console.print(Panel("[bold red]No media entries found in the database.[/bold red]", border_style="red"))
-        return
+        if not media_entries:
+            console.print(Panel("[bold red]No media entries found in the database.[/bold red]", border_style="red"))
+            return
 
-    console.print("[bold cyan]All Media Entries:[/bold cyan]")
-    for idx, media in enumerate(media_entries, 1):
-        source = session.query(Source).filter_by(id=media.source_id).first()
-        console.print(f"[bold {idx}] URL: {media.url} | Source: {source.name} ({source.base_url})")
+        console.print("[bold cyan]All Media Entries:[/bold cyan]")
+        for idx, media in enumerate(media_entries, 1):
+            media.print_on_screen(count=idx)
+    except Exception as e:
+        console.print(Panel(f"[bold red]Error fetching media entries: {e}[/bold red]", border_style="red"))
+
 
 def list_sources():
     """
     List all sources in the database.
 
-    This function retrieves all the sources from the database and displays them in a readable format,
-    showing the name and base URL of each source.
+    Retrieves all sources from the database and displays them in a structured format,
+    utilizing the `print_on_screen()` method from the Source model.
     """
-    sources = session.query(Source).all()
+    try:
+        sources = session.query(Source).order_by(Source.name).all()
 
-    if not sources:
-        console.print(Panel("[bold red]No sources found in the database.[/bold red]", border_style="red"))
-        return
+        if not sources:
+            console.print(Panel("[bold red]No sources found in the database.[/bold red]", border_style="red"))
+            return
 
-    console.print("[bold cyan]All Sources:[/bold cyan]")
-    for idx, source in enumerate(sources, 1):
-        console.print(f"[bold {idx}] Name: {source.name} | Base URL: {source.base_url}")
-
+        console.print("[bold cyan]All Sources:[/bold cyan]")
+        for idx, source in enumerate(sources, 1):
+            source.print_on_screen(count=idx)
+    except Exception as e:
+        console.print(Panel(f"[bold red]Error fetching sources: {e}[/bold red]", border_style="red"))

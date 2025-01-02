@@ -12,6 +12,7 @@ from rich.prompt import Prompt
 
 from soundbase.db.models import Base, engine, session, Source
 from soundbase.utils.cli_utils import print_basic_info
+from soundbase.utils.db_utils import add_source_to_db
 from soundbase.config import DATABASE_PATH, DOT_SOUNDBASE_DIR
 
 console = Console()
@@ -60,7 +61,6 @@ def init_db():
             # Create a Source for YouTube
             create_youtube_source()
 
-            session.commit()
             console.print(Panel("[bold green]SoundBase initialized successfully.[/bold green]", border_style="green"))
         except Exception as e:
             console.print(Panel(f"[bold red]Error initializing SoundBase: {str(e)}[/bold red]", border_style="red"))
@@ -91,8 +91,7 @@ def create_youtube_source():
     existing_source = session.query(Source).filter_by(name="YouTube").first()
     
     if not existing_source:
-        youtube_source = Source(name="YouTube", base_url="https://www.youtube.com")
-        session.add(youtube_source)
+        add_source_to_db(session=session, name="YouTube", base_url="https://www.youtube.com")
         console.print(Panel("[bold green]YouTube Source added successfully.[/bold green]", border_style="green"))
     else:
         console.print(Panel("[bold yellow]YouTube Source already exists.[/bold yellow]", border_style="yellow"))

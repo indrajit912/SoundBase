@@ -9,6 +9,7 @@ from rich.panel import Panel
 
 from soundbase.db.models import session, Source
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
+from soundbase.utils.db_utils import add_source_to_db
 
 console = Console()
 
@@ -42,10 +43,7 @@ def add_source(name, url):
 
     # Create and add the new source
     try:
-        source_entry = Source(name=name, base_url=url)
-        session.add(source_entry)
-        session.commit()
-
+        add_source_to_db(session=session, name=name, base_url=url)
         console.print(Panel(f"[bold green]Source '{name}' created successfully.[/bold green]", border_style="green"))
     except Exception as e:
         session.rollback()

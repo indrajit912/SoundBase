@@ -10,6 +10,7 @@ from rich.prompt import Prompt
 
 from soundbase.db.models import session, Media, Source
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
+from soundbase.utils.db_utils import add_media_to_db
 
 console = Console()
 
@@ -68,13 +69,13 @@ def add_media(url):
         console.print(Panel(f"[bold yellow]The URL already exists in the database for source: {selected_source.name}[/bold yellow]", border_style="yellow"))
         return
 
-    # Create and add the new Media entry
-    try:
-        media_entry = Media(url=url, source_id=selected_source.id)
-        session.add(media_entry)
-        session.commit()
+    # Prompt user for the media title
+    title = Prompt.ask("Enter the title for the media", default="Untitled")
 
-        console.print(Panel("[bold green]Media added successfully.[/bold green]", border_style="green"))
+    # Use the add_media_to_db utility function to add the media entry
+    try:
+        media_entry = add_media_to_db(session, url=url, title=title, source_id=selected_source.id)
+        console.print(Panel(f"[bold green]Media added successfully:[/bold green] {media_entry.title}", border_style="green"))
 
     except Exception as e:
         session.rollback()

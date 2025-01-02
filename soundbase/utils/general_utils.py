@@ -3,11 +3,28 @@
 # Created On: Jun 16, 2024
 #
 import string
+import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
 import pytz
 from tzlocal import get_localzone_name
+
+def sha256_hash(data: str):
+    """
+    Creates a SHA-256 hash of the input data.
+
+    Args:
+        data (str): The input data to be hashed. Can be a string or bytes.
+
+    Returns:
+        str: The SHA-256 hash of the input data in hexadecimal format.
+    """
+    if isinstance(data, bytes):
+        sha256_hash = hashlib.sha256(data).hexdigest()
+    else:
+        sha256_hash = hashlib.sha256(data.encode()).hexdigest()
+    return sha256_hash
 
 def get_system_timezone():
     """
