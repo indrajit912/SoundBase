@@ -4,6 +4,8 @@
 #
 import uuid
 import os
+import shutil
+import psutil
 from datetime import datetime
 
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Integer
@@ -181,6 +183,19 @@ class SystemInfo(LocalBase):
     media_dir = Column(String, nullable=False, default=DEFAULT_MEDIA_DIR.__str__())  # Default to a placeholder directory
     last_modified = Column(DateTime, default=utcnow, onupdate=utcnow)  # Last modification timestamp
 
+    os_type = Column(String, nullable=False, default=os.uname().sysname)
+    os_version = Column(String, nullable=False, default=os.uname().release)
+    architecture = Column(String, nullable=False, default=os.uname().machine)
+
+    total_disk_space = Column(Integer, nullable=False, default=shutil.disk_usage("/").total)
+    used_disk_space = Column(Integer, nullable=False, default=shutil.disk_usage("/").used)
+    free_disk_space = Column(Integer, nullable=False, default=shutil.disk_usage("/").free)
+    
+    total_memory = Column(Integer, nullable=False, default=psutil.virtual_memory().total)
+    used_memory = Column(Integer, nullable=False, default=psutil.virtual_memory().used)
+    free_memory = Column(Integer, nullable=False, default=psutil.virtual_memory().available)
+    
+
     @validates('media_dir')
     def validate_media_dir(self, key, value):
         if not os.path.isdir(value):
@@ -212,9 +227,25 @@ class SystemInfo(LocalBase):
         installation_dt_str = convert_utc_to_local_str(datetime.fromisoformat(installation_dt_iso))
         table.add_row("App Installation Date", f"[magenta]{installation_dt_str}[/magenta]")
         table.add_row("Media Directory", f"[cyan]{self.media_dir}[/cyan]")
+
         last_modified_iso = self.last_modified.isoformat()
         last_modified_str = convert_utc_to_local_str(datetime.fromisoformat(last_modified_iso))
         table.add_row("Last Modified", f"[purple]{last_modified_str}[/purple]")
+
+        # Add OS-related information
+        table.add_row("OS Type", f"[yellow]{self.os_type}[/yellow]")
+        table.add_row("OS Version", f"[yellow]{self.os_version}[/yellow]")
+        table.add_row("Architecture", f"[yellow]{self.architecture}[/yellow]")
+
+        # Add Disk space information (in GB)
+        table.add_row("Total Disk Space", f"[bold green]{self.total_disk_space / (1024 ** 3):.2f} GB[/bold green]")
+        table.add_row("Used Disk Space", f"[bold red]{self.used_disk_space / (1024 ** 3):.2f} GB[/bold red]")
+        table.add_row("Free Disk Space", f"[bold yellow]{self.free_disk_space / (1024 ** 3):.2f} GB[/bold yellow]")
+
+        # Add Memory information (in GB)
+        table.add_row("Total Memory", f"[bold green]{self.total_memory / (1024 ** 3):.2f} GB[/bold green]")
+        table.add_row("Used Memory", f"[bold red]{self.used_memory / (1024 ** 3):.2f} GB[/bold red]")
+        table.add_row("Free Memory", f"[bold yellow]{self.free_memory / (1024 ** 3):.2f} GB[/bold yellow]")
 
         # Print the table in a panel
         console.print(Panel(table, title=f"{count_display}Local Info", title_align="left", border_style="bright_blue"))
