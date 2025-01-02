@@ -179,6 +179,7 @@ class SystemInfo(LocalBase):
     username = Column(String, nullable=False, default=os.getlogin)  # Default to the current system username
     installation_date = Column(DateTime, default=utcnow)   # Default to the current UTC time
     media_dir = Column(String, nullable=False, default=DEFAULT_MEDIA_DIR.__str__())  # Default to a placeholder directory
+    last_modified = Column(DateTime, default=utcnow, onupdate=utcnow)  # Last modification timestamp
 
     @validates('media_dir')
     def validate_media_dir(self, key, value):
@@ -188,3 +189,32 @@ class SystemInfo(LocalBase):
     
     def __repr__(self):
         return f"<SystemInfo(username={self.username}, installation_date={self.installation_date}, media_dir={self.media_dir})>"
+    
+    def print_on_screen(self, count=None):
+        """
+        Prints the system information on the terminal screen in a professional CLI app style using the rich library.
+
+        Parameters:
+        count (int): Optional count to be displayed in the title (e.g., "(1)").
+        """
+        console = Console()
+
+        count_display = f"({count}) " if count else ''  # Handle the count parameter
+
+        # Create a table to display system information
+        table = Table(title="Local System Information", title_style="bold cyan", style="bright_blue")
+        table.add_column("Field", style="bold white", width=16)
+        table.add_column("Value", justify="left", style="bright_yellow")
+
+        # Add rows with colors for each field
+        table.add_row("Username", f"[green]{self.username}[/green]")
+        installation_dt_iso = self.installation_date.isoformat()
+        installation_dt_str = convert_utc_to_local_str(datetime.fromisoformat(installation_dt_iso))
+        table.add_row("App Installation Date", f"[magenta]{installation_dt_str}[/magenta]")
+        table.add_row("Media Directory", f"[cyan]{self.media_dir}[/cyan]")
+        last_modified_iso = self.last_modified.isoformat()
+        last_modified_str = convert_utc_to_local_str(datetime.fromisoformat(last_modified_iso))
+        table.add_row("Last Modified", f"[purple]{last_modified_str}[/purple]")
+
+        # Print the table in a panel
+        console.print(Panel(table, title=f"{count_display}Local Info", title_align="left", border_style="bright_blue"))
