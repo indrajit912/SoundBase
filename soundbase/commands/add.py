@@ -8,7 +8,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from soundbase.db.models import session, Media, Source
+from soundbase.db.database import session
+from soundbase.db.models import Media, Source
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
 from soundbase.utils.db_utils import add_media_to_db
 
@@ -73,10 +74,9 @@ def add_media(url):
     title = Prompt.ask("Enter the title for the media", default="Untitled")
 
     # Use the add_media_to_db utility function to add the media entry
-    try:
-        media_entry = add_media_to_db(session, url=url, title=title, source_id=selected_source.id)
-        console.print(Panel(f"[bold green]Media added successfully:[/bold green] {media_entry.title}", border_style="green"))
+    result = add_media_to_db(session, url=url, title=title, source_id=selected_source.id)
 
-    except Exception as e:
-        session.rollback()
-        console.print(Panel(f"[bold red]Error adding media: {str(e)}[/bold red]", border_style="red"))
+    if result["status"] == "success":
+        console.print(Panel(f"[bold green]Media added successfully:[/bold green] {result['media'].title}", border_style="green"))
+    else:
+        console.print(Panel(f"[bold red]Error adding media: {result['message']}[/bold red]", border_style="red"))

@@ -3,22 +3,20 @@
 # Created On: Jan 01, 2025
 #
 import uuid
+import os
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, validates
+from sqlalchemy.orm import validates
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from soundbase.config import DATABASE_URL
+from soundbase.db.database import Base, LocalBase
 from soundbase.utils.general_utils import utcnow, sha256_hash, convert_utc_to_local_str
-
-Base = declarative_base()
+from soundbase.config import DEFAULT_MEDIA_DIR
 
 class Source(Base):
     """
@@ -34,7 +32,7 @@ class Source(Base):
     Relationships:
         media (relationship): A one-to-many relationship with the Media model.
     """
-    __tablename__ = 'sources'
+    __tablename__ = 'source'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False, unique=True)  # Website name
@@ -106,7 +104,7 @@ class Media(Base):
     url = Column(Text, nullable=False, unique=True)  # URL of the media (music or video)
     title = Column(String(100), nullable=False) # Title of the media
     hash = Column(Text, nullable=False, unique=True)  # SHA-256 hash of the URL
-    source_id = Column(UUID(as_uuid=True), ForeignKey('sources.id'), nullable=False)  # Foreign key to Source
+    source_id = Column(UUID(as_uuid=True), ForeignKey('source.id'), nullable=False)  # Foreign key to Source
     added_on = Column(DateTime, default=utcnow)  # Timestamp when the media was added
     last_modified = Column(DateTime, default=utcnow, onupdate=utcnow)  # Last modification timestamp
 
@@ -174,9 +172,19 @@ class Media(Base):
 
         console.print(Panel(table, title=f"{count_display}{self.id}", title_align="left", border_style="bright_blue"))
 
-# Create an engine and session for interacting with the database
-engine = create_engine(DATABASE_URL)
-Session = sessionmaker(bind=engine)
+class SystemInfo(LocalBase):
+    __tablename__ = 'system_info'
+    
+    id = Column(Integer, primary_key=True)
+    username = Column(String, nullable=False, default=os.getlogin)  # Default to the current system username
+    installation_date = Column(DateTime, default=utcnow)   # Default to the current UTC time
+    media_dir = Column(String, nullable=False, default=DEFAULT_MEDIA_DIR.__str__())  # Default to a placeholder directory
 
-# Create a session
-session = Session()
+    @validates('media_dir')
+    def validate_media_dir(self, key, value):
+        if not os.path.isdir(value):
+            raise ValueError(f"The directory '{value}' does not exist.")
+        return value
+    
+    def __repr__(self):
+        return f"<SystemInfo(username={self.username}, installation_date={self.installation_date}, media_dir={self.media_dir})>"

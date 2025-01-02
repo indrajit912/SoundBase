@@ -5,7 +5,9 @@
 import click
 from rich.console import Console
 from rich.panel import Panel
-from soundbase.db.models import session, Media, Source
+
+from soundbase.db.database import session
+from soundbase.db.models import Media, Source
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
 
 console = Console()

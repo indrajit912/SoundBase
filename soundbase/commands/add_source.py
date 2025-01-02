@@ -7,7 +7,8 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-from soundbase.db.models import session, Source
+from soundbase.db.database import session
+from soundbase.db.models import Source
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
 from soundbase.utils.db_utils import add_source_to_db
 
@@ -33,7 +34,7 @@ def add_source(name, url):
     """
     print_basic_info()
     assert_db_init()
-    
+
     # Check if the source already exists
     existing_source = session.query(Source).filter(Source.name == name).first()
 
@@ -42,9 +43,9 @@ def add_source(name, url):
         return
 
     # Create and add the new source
-    try:
-        add_source_to_db(session=session, name=name, base_url=url)
+    result = add_source_to_db(session=session, name=name, base_url=url)
+    
+    if result["status"] == "success":
         console.print(Panel(f"[bold green]Source '{name}' created successfully.[/bold green]", border_style="green"))
-    except Exception as e:
-        session.rollback()
-        console.print(Panel(f"[bold red]Error creating source: {str(e)}[/bold red]", border_style="red"))
+    else:
+        console.print(Panel(f"[bold red]Error creating source: {result['message']}[/bold red]", border_style="red"))

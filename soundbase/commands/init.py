@@ -4,16 +4,19 @@
 # 
 
 import shutil
+import os
 
 import click
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
+from sqlalchemy.exc import SQLAlchemyError
 
-from soundbase.db.models import Base, engine, session, Source
+from soundbase.db.database import Base, engine, session, LocalBase, local_session, local_engine
+from soundbase.db.models import Source, SystemInfo
 from soundbase.utils.cli_utils import print_basic_info
 from soundbase.utils.db_utils import add_source_to_db
-from soundbase.config import DATABASE_PATH, DOT_SOUNDBASE_DIR
+from soundbase.config import DATABASE_PATH, DOT_SOUNDBASE_DIR, DEFAULT_MEDIA_DIR
 
 console = Console()
 
@@ -37,16 +40,6 @@ def init():
 def init_db():
     """
     Initialize the database if it does not already exist.
-
-    This function checks if the database exists:
-    - If the database does not exist, it creates the necessary tables and adds 
-      the YouTube source to the database.
-    - If the database already exists, it prompts the user for input to either 
-      retain the existing data or delete everything and recreate the database.
-
-    Raises:
-        Exception: If there is an error during database creation, it will raise 
-        an exception and display an error message.
     """
     if not DATABASE_PATH.exists():
         # Create database and tables if they don't exist
@@ -61,6 +54,9 @@ def init_db():
             # Create a Source for YouTube
             create_youtube_source()
 
+            # Create the local db
+            create_local_db()
+
             console.print(Panel("[bold green]SoundBase initialized successfully.[/bold green]", border_style="green"))
         except Exception as e:
             console.print(Panel(f"[bold red]Error initializing SoundBase: {str(e)}[/bold red]", border_style="red"))
@@ -73,6 +69,41 @@ def init_db():
             shutil.rmtree(DOT_SOUNDBASE_DIR)
             console.print(Panel("[bold red]Existing database deleted.[/bold red]", border_style="red"))
             init_db()  # Recreate the database after deletion
+
+def create_local_db():
+    """
+    Create the local database and SystemInfo table.
+    
+    This function prompts the user to input the system username and media directory 
+    to store information about the local system in the database.
+    """
+    # Create the SystemInfo table if it doesn't already exist
+    try:
+        LocalBase.metadata.create_all(local_engine)
+        console.print(Panel("[bold green]Local database and SystemInfo table created successfully![/bold green]", border_style="green"))
+    except Exception as e:
+        console.print(Panel(f"[bold red]Error creating local database: {str(e)}[/bold red]", border_style="red"))
+        return
+
+    # Prompt for the username and media directory
+    username = Prompt.ask("Enter the system username", default=os.getlogin())  # Default to current system username
+    media_dir = Prompt.ask("Enter the media directory path", default=DEFAULT_MEDIA_DIR.__str__())
+
+    # Validate the media directory (check if it exists)
+    if not os.path.isdir(media_dir):
+        console.print(Panel(f"[bold red]The directory '{media_dir}' does not exist! Please provide a valid directory.[/bold red]", border_style="red"))
+        return
+
+    # Create and add the system info to the database
+    try:
+        system_info = SystemInfo(username=username, media_dir=media_dir)
+        local_session.add(system_info)
+        local_session.commit()
+        console.print(Panel(f"[bold green]System Info: {system_info} added to local database.[/bold green]", border_style="green"))
+    except SQLAlchemyError as e:
+        local_session.rollback()
+        console.print(Panel(f"[bold red]Error adding system info: {str(e)}[/bold red]", border_style="red"))
+
 
 def create_youtube_source():
     """

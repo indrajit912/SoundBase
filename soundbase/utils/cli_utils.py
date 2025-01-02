@@ -8,7 +8,8 @@ from rich.table import Table
 from rich.panel import Panel
 
 from soundbase.version import __version__
-from soundbase.config import APP_NAME, COPYRIGHT_STATEMENT, GITHUB_REPO, DATABASE_PATH
+from soundbase.db.database import local_engine
+from soundbase.config import APP_NAME, COPYRIGHT_STATEMENT, GITHUB_REPO
 
 console = Console()
 
@@ -36,15 +37,28 @@ def print_basic_info():
     console.print("\n")
 
 def check_db_init():
-    """Checks whether db is initialized or not."""
-    if not DATABASE_PATH.exists():
+    """
+    Check if the local database has been initialized.
+    
+    This function checks whether the `SystemInfo` table exists in the local database.
+    If the table exists, it means the app has been initialized. Otherwise, it has not.
+    
+    Returns:
+        bool: True if the database has been initialized, False otherwise.
+    """
+    try:
+        # Check if the SystemInfo table exists in the local database
+        if local_engine.dialect.has_table(local_engine, 'system_info'):
+            return True
+        else:
+            return False
+    except Exception:
         return False
-    else:
-        return True
+
 
 def assert_db_init():
     # Check db_init
-    if not check_db_init():
+    if check_db_init():
         console.print(Panel("[red]No database found![/red] The app is probably not initialized yet.", title="Error", style="bold red"))
         console.print("Please use the [bold]`init`[/bold] command to initialize the app.", style="yellow")
         sys.exit(1)

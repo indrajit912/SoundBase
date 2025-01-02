@@ -15,11 +15,13 @@ DEV_MODE = os.getenv('DEV_MODE', 'off')
 
 DOT_SOUNDBASE_DIR = Path.home() / '.soundbase' if DEV_MODE != 'on' else Path.cwd() / '.soundbase'
 
-MUSIC_DIR = Path.home() / 'Music'
+DEFAULT_MEDIA_DIR = Path.home() / 'Downloads'
 
 DATABASE_PATH = DOT_SOUNDBASE_DIR / 'soundbase.db'
-DATABASE_URL = f'sqlite:///{DATABASE_PATH}'
+LOCAL_DB_PATH = DOT_SOUNDBASE_DIR / 'local.db'
 
+DATABASE_URL = f'sqlite:///{DATABASE_PATH}'
+LOCAL_DB_URL = f'sqlite:///{LOCAL_DB_PATH}'
 
 # Basic information
 APP_NAME = "SounBase"

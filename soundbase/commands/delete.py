@@ -8,8 +8,10 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from soundbase.db.models import session, Media, Source
+from soundbase.db.database import session
+from soundbase.db.models import Media, Source
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
+from soundbase.utils.db_utils import delete_media_from_db, delete_source_from_db
 
 console = Console()
 
@@ -30,10 +32,10 @@ def delete(media, source):
 
     Example Usage:
         To delete a source:
-            $ soundbase delete --source
+            $ soundbase del --source
 
         To delete a media entry:
-            $ soundbase delete --media
+            $ soundbase del --media
 
     Notes:
         - Deleting a source is not allowed if it is associated with any media entries.
@@ -85,14 +87,12 @@ def delete_source():
         ))
         return
 
-    try:
-        session.delete(selected_source)
-        session.commit()
+    result = delete_source_from_db(session, source_id=selected_source.id)
+    
+    if result["status"] == "success":
         console.print(Panel("[bold green]Source deleted successfully.[/bold green]", border_style="green"))
-    except Exception as e:
-        session.rollback()
-        console.print(Panel(f"[bold red]Error deleting source: {str(e)}[/bold red]", border_style="red"))
-
+    else:
+        console.print(Panel(f"[bold red]Error deleting source: {result['message']}[/bold red]", border_style="red"))
 
 def delete_media():
     media_entries = session.query(Media).all()
@@ -120,10 +120,9 @@ def delete_media():
         else:
             console.print("[bold red]Please enter a valid number.[/bold red]")
 
-    try:
-        session.delete(selected_media)
-        session.commit()
+    result = delete_media_from_db(session, media_id=selected_media.id)
+
+    if result["status"] == "success":
         console.print(Panel("[bold green]Media deleted successfully.[/bold green]", border_style="green"))
-    except Exception as e:
-        session.rollback()
-        console.print(Panel(f"[bold red]Error deleting media: {str(e)}[/bold red]", border_style="red"))
+    else:
+        console.print(Panel(f"[bold red]Error deleting media: {result['message']}[/bold red]", border_style="red"))
