@@ -31,7 +31,7 @@ def download():
     - db: Download the soundbase database
     
     Example usage:
-        $ soundbase download media --id "sdklfj-dfslkdkdfs-dsfkldsf-dfs"
+        $ soundbase download media -id "sdklfj-dfslkdkdfs-dsfkldsf-dfs"
         $ soundbase download media --url "http://example.com"       
         $ soundbase download media -all         # This will download all media
 
