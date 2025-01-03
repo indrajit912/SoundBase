@@ -12,6 +12,16 @@ SoundBase is a command-line tool for managing media and source entries in a data
 ---
 
 ## Installation
+To install and uninstall this on Linux/MacOS, use the provided shell scripts [install_soundbase.sh](./scripts/install_soundbase.sh) and [uninstall_soundbase.sh](./scripts/uninstall_soundbase.sh). Alternatively, you can run the following one-liners:
+## Install
+```bash
+curl -o ~/Downloads/install_soundbase.sh https://raw.githubusercontent.com/indrajit912/SoundBase/master/scripts/install_soundbase.sh && chmod +x ~/Downloads/install_soundbase.sh && ~/Downloads/install_soundbase.sh
+```
+
+## Uninstall
+```bash
+curl -o ~/Downloads/uninstall_soundbase.sh https://raw.githubusercontent.com/indrajit912/SoundBase/master/scripts/uninstall_soundbase.sh && chmod +x ~/Downloads/uninstall_soundbase.sh && ~/Downloads/uninstall_soundbase.sh
+```
 
 1. Clone the repository:
     ```bash
