@@ -18,7 +18,7 @@ from rich.panel import Panel
 
 from soundbase.db.database import Base, LocalBase
 from soundbase.utils.general_utils import utcnow, sha256_hash, convert_utc_to_local_str
-from soundbase.config import DEFAULT_MEDIA_DIR
+from soundbase.config import DEFAULT_MEDIA_DIR, DATABASE_PATH
 
 class Source(Base):
     """
@@ -181,6 +181,7 @@ class SystemInfo(LocalBase):
     username = Column(String, nullable=False, default=os.getlogin)  # Default to the current system username
     installation_date = Column(DateTime, default=utcnow)   # Default to the current UTC time
     media_dir = Column(String, nullable=False, default=DEFAULT_MEDIA_DIR.__str__())  # Default to a placeholder directory
+    soundbase_db = Column(String, nullable=False, default=DEFAULT_MEDIA_DIR.__str__())
     last_modified = Column(DateTime, default=utcnow, onupdate=utcnow)  # Last modification timestamp
 
     os_type = Column(String, nullable=False, default=os.uname().sysname)
@@ -227,6 +228,7 @@ class SystemInfo(LocalBase):
         installation_dt_str = convert_utc_to_local_str(datetime.fromisoformat(installation_dt_iso))
         table.add_row("App Installation Date", f"[magenta]{installation_dt_str}[/magenta]")
         table.add_row("Media Directory", f"[cyan]{self.media_dir}[/cyan]")
+        table.add_row("SoundBase DB", f"[cyan]{self.soundbase_db}[/cyan]")
 
         last_modified_iso = self.last_modified.isoformat()
         last_modified_str = convert_utc_to_local_str(datetime.fromisoformat(last_modified_iso))
