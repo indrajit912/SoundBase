@@ -2,6 +2,8 @@
 # Author: Indrajit Ghosh
 # Created On: Jan 02, 2025
 #
+from uuid import UUID
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from soundbase.db.models import Source, Media
@@ -21,11 +23,20 @@ def add_source_to_db(session, name, base_url):
     """
     # Strip whitespace from the name
     name = name.strip()
+    base_url = base_url.strip()
 
     try:
+        # Check if a source with the same base_url already exists
+        existing_source = session.query(Source).filter_by(base_url=base_url).first()
+        if existing_source:
+            return {
+                "status": "error",
+                "message": f"A source with the base URL '{base_url}' already exists."
+            }
+
         # Create a new source object
         source = Source(name=name, base_url=base_url)
-        
+
         # Add the source object to the session and commit the transaction
         session.add(source)
         session.commit()
@@ -45,6 +56,7 @@ def add_source_to_db(session, name, base_url):
             "message": f"An error occurred while adding the source: {str(e)}"
         }
 
+
 def add_media_to_db(session, url, title, source_id):
     """
     Adds a new Media entry to the database.
@@ -58,13 +70,22 @@ def add_media_to_db(session, url, title, source_id):
     Returns:
         dict: A dictionary containing the result of the add operation.
     """
-    # Strip whitespace from the title
+    # Strip whitespace from the title and URL
     title = title.strip()
+    url = url.strip()
 
     try:
+        # Check if a media entry with the same URL already exists
+        existing_media = session.query(Media).filter_by(url=url).first()
+        if existing_media:
+            return {
+                "status": "error",
+                "message": f"A media entry with the URL '{url}' already exists."
+            }
+
         # Create a new media object
         media = Media(url=url, title=title, source_id=source_id)
-        
+
         # Add the media object to the session and commit the transaction
         session.add(media)
         session.commit()
@@ -85,6 +106,7 @@ def add_media_to_db(session, url, title, source_id):
             "message": f"An error occurred while adding the media: {str(e)}"
         }
 
+
 def delete_media_from_db(session, media_id):
     """
     Deletes a media entry from the database by its ID.
@@ -96,6 +118,10 @@ def delete_media_from_db(session, media_id):
     Returns:
     - dict: A dictionary containing the result of the delete operation.
     """
+    # Ensure source_id is a UUID object
+    if isinstance(media_id, str):
+        media_id = UUID(media_id)
+
     # Query the Media object by ID
     media = session.query(Media).filter_by(id=media_id).first()
     
@@ -136,28 +162,40 @@ def delete_source_from_db(session, source_id):
     Returns:
     - dict: A dictionary containing the result of the delete operation.
     """
+    # Ensure source_id is a UUID object
+    if isinstance(source_id, str):
+        source_id = UUID(source_id)
+
     # Query the Source object by ID
     source = session.query(Source).filter_by(id=source_id).first()
     
     if source:
-        try:
-            # Delete the source object
-            session.delete(source)
-            session.commit()  # Commit the transaction
-            
-            # Return success message
-            return {
-                "status": "success",
-                "message": f"Source entry with ID {source_id} has been deleted.",
-                "source_id": source_id
-            }
-        
-        except SQLAlchemyError as e:
-            session.rollback()  # Rollback the transaction in case of error
+        # Check if there are media entries associated with the selected source
+        associated_media_count = session.query(Media).filter_by(source_id=source_id).count()
+        if associated_media_count > 0:
             return {
                 "status": "error",
-                "message": f"An error occurred while deleting the source entry: {str(e)}"
+                "message": f"Cannot delete source '{source.name}' because it is associated with {associated_media_count} media entry/entries."
             }
+        else:
+            try:
+                # Delete the source object
+                session.delete(source)
+                session.commit()  # Commit the transaction
+
+                # Return success message
+                return {
+                    "status": "success",
+                    "message": f"Source entry with ID {source_id} has been deleted.",
+                    "source_id": source_id
+                }
+
+            except SQLAlchemyError as e:
+                session.rollback()  # Rollback the transaction in case of error
+                return {
+                    "status": "error",
+                    "message": f"An error occurred while deleting the source entry: {str(e)}"
+                }
     
     else:
         return {
@@ -179,6 +217,14 @@ def update_media_in_db(session, media_id, title: str = None, url: str = None, so
     Returns:
     - dict: A dictionary containing the result of the update operation.
     """
+    # Ensure media_id is a UUID object
+    if isinstance(media_id, str):
+        media_id = UUID(media_id)
+    
+    # Ensure source_id is a UUID object
+    if isinstance(source_id, str):
+        source_id = UUID(source_id)
+
     # Query the Media object by ID
     media = session.query(Media).filter_by(id=media_id).first()
     
@@ -236,6 +282,10 @@ def update_source_in_db(session, source_id, name: str = None, base_url: str = No
     Returns:
     - dict: A dictionary containing the result of the update operation.
     """
+    # Ensure source_id is a UUID object
+    if isinstance(source_id, str):
+        source_id = UUID(source_id)
+
     # Query the Source object by ID
     source = session.query(Source).filter_by(id=source_id).first()
     
@@ -272,5 +322,54 @@ def update_source_in_db(session, source_id, name: str = None, base_url: str = No
         return {
             "status": "error",
             "message": f"No source found with ID {source_id}."
+        }
+
+def search_media_in_db(session, title: str = None, url: str = None, source_id=None):
+    """
+    Searches for media entries in the database based on the given filters.
+
+    Args:
+        session (Session): The SQLAlchemy session object.
+        title (str, optional): The title of the media to search for.
+        url (str, optional): The URL of the media to search for.
+        source_id (UUID, optional): The source ID associated with the media to search for.
+
+    Returns:
+        dict: A dictionary containing the search results or an error message.
+    """
+    try:
+        # Start the query
+        query = session.query(Media)
+        
+        # Apply filters if provided
+        if title:
+            query = query.filter(Media.title.ilike(f"%{title.strip()}%"))
+        if url:
+            query = query.filter(Media.url.ilike(f"%{url.strip()}%"))
+        if source_id:
+            if isinstance(source_id, str):
+                source_id = UUID(source_id)
+            query = query.filter(Media.source_id == source_id)
+        
+        # Execute the query and fetch all matching results
+        results = query.all()
+
+        # Check if any results were found
+        if results:
+            return {
+                "status": "success",
+                "message": f"Found {len(results)} media entry/entries matching the criteria.",
+                "media": [media.json() for media in results]  # Assuming Media model has a `json` method
+            }
+        else:
+            return {
+                "status": "success",
+                "message": "No media entries found matching the criteria.",
+                "media": []
+            }
+    except SQLAlchemyError as e:
+        return {
+            "status": "error",
+            "message": f"An error occurred while searching for media entries: {str(e)}"
         }
 

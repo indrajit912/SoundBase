@@ -84,7 +84,7 @@ class Source(Base):
         dt_last_modified_str = convert_utc_to_local_str(datetime.fromisoformat(dt_last_modified_iso))
         table.add_row("Last Modified", f"[purple]{dt_last_modified_str}[/purple]")
 
-        console.print(Panel(table, title=f"{count_display}{self.id}", title_align="left", border_style="bright_blue"))
+        console.print(Panel(table, title=f"{count_display}{self.name}", title_align="left", border_style="bright_blue"))
 
 class Media(Base):
     """

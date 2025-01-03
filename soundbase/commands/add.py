@@ -77,6 +77,6 @@ def add_media(url):
     result = add_media_to_db(session, url=url, title=title, source_id=selected_source.id)
 
     if result["status"] == "success":
-        console.print(Panel(f"[bold green]Media added successfully:[/bold green] {result['media'].title}", border_style="green"))
+        console.print(Panel(f"[bold green]Media added successfully:[/bold green] {result['media_title']}", border_style="green"))
     else:
         console.print(Panel(f"[bold red]Error adding media: {result['message']}[/bold red]", border_style="red"))

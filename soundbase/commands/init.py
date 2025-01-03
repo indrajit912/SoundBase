@@ -16,7 +16,7 @@ from soundbase.db.database import Base, engine, session, LocalBase, local_sessio
 from soundbase.db.models import Source, SystemInfo
 from soundbase.utils.cli_utils import print_basic_info
 from soundbase.utils.db_utils import add_source_to_db
-from soundbase.config import DATABASE_PATH, DOT_SOUNDBASE_DIR, DEFAULT_MEDIA_DIR
+from soundbase.config import DATABASE_PATH, DOT_SOUNDBASE_DIR, DEFAULT_MEDIA_DIR, LOCAL_DB_PATH
 
 console = Console()
 
@@ -41,18 +41,17 @@ def init_db():
     """
     Initialize the database if it does not already exist.
     """
-    if not DATABASE_PATH.exists():
+    if not (DATABASE_PATH.exists() or LOCAL_DB_PATH.exists()):
         # Create database and tables if they don't exist
         DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        LOCAL_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            Base.metadata.create_all(engine)
-
             console.rule("[bold cyan]SoundBase Initialization[/bold cyan]")
             console.print("\n")
             
-            # Create a Source for YouTube
-            create_youtube_source()
+            # Create SoundBase db
+            create_soundbase_db()
 
             # Create the local db
             create_local_db()
@@ -69,6 +68,18 @@ def init_db():
             shutil.rmtree(DOT_SOUNDBASE_DIR)
             console.print(Panel("[bold red]Existing database deleted.[/bold red]", border_style="red"))
             init_db()  # Recreate the database after deletion
+
+def create_soundbase_db():
+    """
+    Create the soundbase.db and associated tables (Media, Source).
+    """
+    try:
+        Base.metadata.create_all(engine)
+        console.print(Panel("[bold green]SoundBase database (for storing Media and Source tables) created successfully![/bold green]", border_style="green"))
+        create_youtube_source()
+    except Exception as e:
+        console.print(Panel(f"[bold red]Error creating SoundBase database: {str(e)}[/bold red]", border_style="red"))
+        return
 
 def create_local_db():
     """

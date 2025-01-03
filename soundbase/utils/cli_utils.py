@@ -6,9 +6,10 @@ from datetime import date
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from sqlalchemy import inspect
 
 from soundbase.version import __version__
-from soundbase.db.database import local_engine
+from soundbase.db.database import local_engine, engine
 from soundbase.config import APP_NAME, COPYRIGHT_STATEMENT, GITHUB_REPO
 
 console = Console()
@@ -36,6 +37,7 @@ def print_basic_info():
     console.print(info_table)
     console.print("\n")
 
+
 def check_db_init():
     """
     Check if the local database has been initialized.
@@ -48,17 +50,17 @@ def check_db_init():
     """
     try:
         # Check if the SystemInfo table exists in the local database
-        if local_engine.dialect.has_table(local_engine, 'system_info'):
+        if inspect(local_engine).has_table('system_info'):
             return True
         else:
             return False
-    except Exception:
+    except Exception as e:
         return False
 
 
 def assert_db_init():
     # Check db_init
-    if check_db_init():
+    if not check_db_init():
         console.print(Panel("[red]No database found![/red] The app is probably not initialized yet.", title="Error", style="bold red"))
         console.print("Please use the [bold]`init`[/bold] command to initialize the app.", style="yellow")
         sys.exit(1)

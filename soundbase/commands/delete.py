@@ -9,7 +9,6 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 from soundbase.db.database import session
-from soundbase.db.models import Media, Source
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
 from soundbase.utils.db_utils import delete_media_from_db, delete_source_from_db
 
@@ -44,85 +43,21 @@ def delete(media, source):
     """
     print_basic_info()
     assert_db_init()
-    
+
     if source:
-        delete_source()
+        source_id = Prompt.ask("[bold cyan]Enter the Source ID to delete[/bold cyan]")
+        result = delete_source_from_db(session, source_id)
+        if result["status"] == "success":
+            console.print(Panel(f"[bold green]{result['message']}[/bold green]", border_style="green"))
+        else:
+            console.print(Panel(f"[bold red]{result['message']}[/bold red]", border_style="red"))
     elif media:
-        delete_media()
+        media_id = Prompt.ask("[bold cyan]Enter the Media ID to delete[/bold cyan]")
+        result = delete_media_from_db(session, media_id)
+        if result["status"] == "success":
+            console.print(Panel(f"[bold green]{result['message']}[/bold green]", border_style="green"))
+        else:
+            console.print(Panel(f"[bold red]{result['message']}[/bold red]", border_style="red"))
     else:
         console.print(Panel("[bold red]Please specify either --media or --source option.[/bold red]", border_style="red"))
 
-def delete_source():
-    sources = session.query(Source).all()
-    if not sources:
-        console.print("[bold red]No sources available to delete.[/bold red]")
-        return
-
-    console.print("\n[bold green]Available Sources:[/bold green]")
-    for index, source in enumerate(sources, start=1):
-        console.print(f" {index}. {source.name} - {source.base_url}")
-    console.print(" 0. Quit")
-
-    while True:
-        source_choice = Prompt.ask("[-] Select a source to delete by number or 0 to quit")
-        if source_choice.isdigit():
-            source_choice = int(source_choice)
-            if source_choice == 0:
-                console.print("[bold yellow]Quitting source delete process.[/bold yellow]")
-                return
-            elif 1 <= source_choice <= len(sources):
-                selected_source = sources[source_choice - 1]
-                break
-            else:
-                console.print("[bold red]Invalid choice. Please select a valid source number.[/bold red]")
-        else:
-            console.print("[bold red]Please enter a valid number.[/bold red]")
-
-    # Check if there are media entries associated with the selected source
-    associated_media_count = session.query(Media).filter_by(source_id=selected_source.id).count()
-    if associated_media_count > 0:
-        console.print(Panel(
-            f"[bold yellow]Cannot delete source '{selected_source.name}' because it is associated with {associated_media_count} media entry/entries.[/bold yellow]",
-            border_style="yellow"
-        ))
-        return
-
-    result = delete_source_from_db(session, source_id=selected_source.id)
-    
-    if result["status"] == "success":
-        console.print(Panel("[bold green]Source deleted successfully.[/bold green]", border_style="green"))
-    else:
-        console.print(Panel(f"[bold red]Error deleting source: {result['message']}[/bold red]", border_style="red"))
-
-def delete_media():
-    media_entries = session.query(Media).all()
-    if not media_entries:
-        console.print("[bold red]No media entries available to delete.[/bold red]")
-        return
-
-    console.print("\n[bold green]Available Media:[/bold green]")
-    for index, media in enumerate(media_entries, start=1):
-        console.print(f" {index}. {media.url} (Source ID: {media.source_id})")
-    console.print(" 0. Quit")
-
-    while True:
-        media_choice = Prompt.ask("[-] Select a media to delete by number or 0 to quit")
-        if media_choice.isdigit():
-            media_choice = int(media_choice)
-            if media_choice == 0:
-                console.print("[bold yellow]Quitting media delete process.[/bold yellow]")
-                return
-            elif 1 <= media_choice <= len(media_entries):
-                selected_media = media_entries[media_choice - 1]
-                break
-            else:
-                console.print("[bold red]Invalid choice. Please select a valid media number.[/bold red]")
-        else:
-            console.print("[bold red]Please enter a valid number.[/bold red]")
-
-    result = delete_media_from_db(session, media_id=selected_media.id)
-
-    if result["status"] == "success":
-        console.print(Panel("[bold green]Media deleted successfully.[/bold green]", border_style="green"))
-    else:
-        console.print(Panel(f"[bold red]Error deleting media: {result['message']}[/bold red]", border_style="red"))
