@@ -68,8 +68,7 @@ rm -rf "$DOT_SOUNDBASE_DIR"
 if [ -f "$HOME/.bashrc" ]; then
     if grep -q "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.bashrc"; then
         print_message "Removing $SOUNDBASE_ENV_BIN_DIR from PATH in ~/.bashrc..."
-        # Use sed with escaping for special characters
-        sed -i '/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d' "$HOME/.bashrc"
+        grep -v "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.bashrc" > "$HOME/.bashrc.tmp" && mv "$HOME/.bashrc.tmp" "$HOME/.bashrc"
     else
         print_message "$SOUNDBASE_ENV_BIN_DIR not found in ~/.bashrc."
     fi
@@ -81,8 +80,7 @@ fi
 if [ -f "$HOME/.zshrc" ]; then
     if grep -q "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.zshrc"; then
         print_message "Removing $SOUNDBASE_ENV_BIN_DIR from PATH in ~/.zshrc..."
-        # Use sed with escaping for special characters
-        sed -i '/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d' "$HOME/.zshrc"
+        grep -v "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.zshrc" > "$HOME/.zshrc.tmp" && mv "$HOME/.zshrc.tmp" "$HOME/.zshrc"
     else
         print_message "$SOUNDBASE_ENV_BIN_DIR not found in ~/.zshrc."
     fi
@@ -94,8 +92,7 @@ fi
 if [ -f "$HOME/.bash_profile" ]; then
     if grep -q "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.bash_profile"; then
         print_message "Removing $SOUNDBASE_ENV_BIN_DIR from PATH in ~/.bash_profile..."
-        # Use sed with escaping for special characters
-        sed -i '/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d' "$HOME/.bash_profile"
+        grep -v "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.bash_profile" > "$HOME/.bash_profile.tmp" && mv "$HOME/.bash_profile.tmp" "$HOME/.bash_profile"
     else
         print_message "$SOUNDBASE_ENV_BIN_DIR not found in ~/.bash_profile."
     fi
