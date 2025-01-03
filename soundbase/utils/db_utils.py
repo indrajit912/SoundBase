@@ -23,7 +23,8 @@ def add_source_to_db(session, name, base_url):
     """
     # Strip whitespace from the name
     name = name.strip()
-    base_url = base_url.strip()
+    base_url = base_url.strip().rstrip('/') # Removing the end '/' from the url
+
 
     try:
         # Check if a source with the same base_url already exists
@@ -72,7 +73,7 @@ def add_media_to_db(session, url, title, source_id):
     """
     # Strip whitespace from the title and URL
     title = title.strip()
-    url = url.strip()
+    url = url.strip().rstrip('/')
 
     try:
         # Check if a media entry with the same URL already exists

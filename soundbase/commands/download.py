@@ -10,8 +10,9 @@ from uuid import UUID
 from rich.panel import Panel
 from rich.console import Console
 
-from soundbase.db.database import session
-from soundbase.db.models import Media
+from soundbase.db.database import session, local_session
+from soundbase.db.models import Media, Source, SystemInfo
+from soundbase.utils.db_utils import add_media_to_db, add_source_to_db
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
 from soundbase.utils.yt_dlp_utils import download_audio
 from soundbase.config import DEFAULT_MEDIA_DIR, DATABASE_PATH
@@ -61,7 +62,9 @@ def media(media_id, url, media_dir):
 
     # Set the directory to download the media
     if not media_dir:
-        media_dir = DEFAULT_MEDIA_DIR
+        # Get the media dir from db
+        system_info = local_session.query(SystemInfo).first()
+        media_dir = system_info.media_dir
 
     # If media_id is provided, retrieve media info from the database
     if media_id:
@@ -88,6 +91,32 @@ def media(media_id, url, media_dir):
     # If url is provided directly, use that URL
     if url:
         console.print(f"Using provided URL: {url}", style="bold green")
+
+        # Check if the URL exists in the Media table
+        existing_media = session.query(Media).filter_by(url=url).first()
+
+        if existing_media:
+            console.print(Panel(f"The media is already in the database: {existing_media.title} ({existing_media.id})", style="bold blue"))
+        else:
+            # Check if the URL is a YouTube URL
+            if "youtube.com" in url or "youtu.be" in url:
+                console.print(Panel("This YouTube URL is not in the database.", style="bold yellow"))
+                if click.confirm("Would you like to add this media to the database?"):
+                    # Retrieve or create the YouTube source
+                    youtube_source = session.query(Source).filter_by(base_url="https://www.youtube.com").first()
+                    if not youtube_source:
+                        add_source_to_db(session=session, name="YouTube", base_url="https://www.youtube.com")
+
+                    # Ask the user for a title for the media
+                    title = click.prompt("Please provide a title for the media", type=str)
+
+                    # Add the media to the database
+                    result = add_media_to_db(session=session, url=url, title=title, source_id=youtube_source.id)
+                    if result["status"] == "success":
+                        console.print(Panel(f"[bold green]Media added successfully:[/bold green] {result['media_title']}", border_style="green"))
+                    else:
+                        console.print(Panel(f"[bold red]Error adding media: {result['message']}[/bold red]", border_style="red"))
+
 
     # Perform the download
     download_audio(url=url, output_path=media_dir)
