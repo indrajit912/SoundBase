@@ -17,12 +17,8 @@
 #
 # Notes:
 # - This script will delete the virtual environment, SoundBase installation, and soundbase.db from your system.
-# - If you need to keep the soundbase.db file, please stop now, download a copy of it using the SoundBase app, and then re-run the uninstallation script.
-#
-# If you are ready to proceed with the uninstallation, the following steps will be performed:
-#   1. Remove the virtual environment.
-#   2. Remove the SoundBase installation.
-#   3. Remove the reference to the virtual environment from system PATH.
+# - If you need to keep the soundbase.db file, please stop now and download a copy using the SoundBase app.
+# - Once you have backed up the database, you can safely re-run this uninstallation script.
 
 # Function to print messages
 function print_message() {
@@ -72,7 +68,8 @@ rm -rf "$DOT_SOUNDBASE_DIR"
 if [ -f "$HOME/.bashrc" ]; then
     if grep -q "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.bashrc"; then
         print_message "Removing $SOUNDBASE_ENV_BIN_DIR from PATH in ~/.bashrc..."
-        sed -i "/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d" "$HOME/.bashrc"
+        # Use sed with escaping for special characters
+        sed -i '/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d' "$HOME/.bashrc"
     else
         print_message "$SOUNDBASE_ENV_BIN_DIR not found in ~/.bashrc."
     fi
@@ -84,7 +81,8 @@ fi
 if [ -f "$HOME/.zshrc" ]; then
     if grep -q "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.zshrc"; then
         print_message "Removing $SOUNDBASE_ENV_BIN_DIR from PATH in ~/.zshrc..."
-        sed -i "/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d" "$HOME/.zshrc"
+        # Use sed with escaping for special characters
+        sed -i '/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d' "$HOME/.zshrc"
     else
         print_message "$SOUNDBASE_ENV_BIN_DIR not found in ~/.zshrc."
     fi
@@ -96,7 +94,8 @@ fi
 if [ -f "$HOME/.bash_profile" ]; then
     if grep -q "export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR" "$HOME/.bash_profile"; then
         print_message "Removing $SOUNDBASE_ENV_BIN_DIR from PATH in ~/.bash_profile..."
-        sed -i "/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d" "$HOME/.bash_profile"
+        # Use sed with escaping for special characters
+        sed -i '/export PATH=\$PATH:$SOUNDBASE_ENV_BIN_DIR/d' "$HOME/.bash_profile"
     else
         print_message "$SOUNDBASE_ENV_BIN_DIR not found in ~/.bash_profile."
     fi

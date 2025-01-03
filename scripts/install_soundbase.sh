@@ -120,7 +120,7 @@ else
     print_message "~/.bash_profile file does not exist."
 fi
 
-print_message "Setup complete! You can now use the 'vaultsafe' command."
+print_message "Setup complete! You can now use the 'soundbase' command."
 print_message "Please restart your terminal or run 'source ~/.bashrc' or 'source ~/.zshrc' to apply changes."
 
 THIS_SCRIPT="$HOME/Downloads/install_soundbase.sh"
