@@ -181,7 +181,7 @@ class SystemInfo(LocalBase):
     username = Column(String, nullable=False, default=os.getlogin)  # Default to the current system username
     installation_date = Column(DateTime, default=utcnow)   # Default to the current UTC time
     media_dir = Column(String, nullable=False, default=DEFAULT_MEDIA_DIR.__str__())  # Default to a placeholder directory
-    soundbase_db = Column(String, nullable=False, default=DEFAULT_MEDIA_DIR.__str__())
+    soundbase_db = Column(String, nullable=False, default=DATABASE_PATH.__str__())
     last_modified = Column(DateTime, default=utcnow, onupdate=utcnow)  # Last modification timestamp
 
     os_type = Column(String, nullable=False, default=os.uname().sysname)
