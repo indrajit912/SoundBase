@@ -18,8 +18,8 @@ long_description = (base_dir / 'README.md').read_text()
 install_requires = (base_dir / 'requirements.txt').read_text().splitlines()
 
 setup(
-    name='soundbase',  # Update with your project name
-    version=version['__version__'],  # Update version if necessary
+    name='soundbase',
+    version=version['__version__'],
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
@@ -29,15 +29,15 @@ setup(
         ],
     },
     author='Indrajit Ghosh',
-    author_email='your_email@example.com',  # Replace with your actual email
-    description='A media management application for SoundBase',  # Update description
+    author_email='indrajitghosh912@gmail.com',
+    description='A command-line tool to manage and organize media content',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url="https://github.com/yourusername/soundbase",  # Replace with your repo URL
+    url="https://github.com/indrajit912/SoundBase",
     classifiers=[
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: MIT License',  # Update if using a different license
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.7',  # Minimum Python version required
+    python_requires='>=3.7',
 )
