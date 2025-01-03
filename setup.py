@@ -25,7 +25,7 @@ setup(
     install_requires=install_requires,
     entry_points={
         'console_scripts': [
-            'soundbase = soundbase.cli:cli',
+            'soundbase=soundbase.cli:cli',
         ],
     },
     author='Indrajit Ghosh',

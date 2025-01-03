@@ -9,7 +9,7 @@ from rich.panel import Panel
 from sqlalchemy import inspect
 
 from soundbase.version import __version__
-from soundbase.db.database import local_engine, engine
+from soundbase.db.database import local_engine
 from soundbase.config import APP_NAME, COPYRIGHT_STATEMENT, GITHUB_REPO
 
 console = Console()
