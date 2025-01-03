@@ -45,7 +45,7 @@ def download_audio(url, output_path):
 
 def main():
     dir = Path.home() / "Downloads"
-    download_audio('https://www.youtube.com/watch?v=UdsO4SM4wKI', dir)
+    download_audio('https://www.youtube.com/watch?v=S9bCLPwzSC0', dir)
 
 if __name__ == '__main__':
     main()

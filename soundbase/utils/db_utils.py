@@ -373,3 +373,51 @@ def search_media_in_db(session, title: str = None, url: str = None, source_id=No
             "message": f"An error occurred while searching for media entries: {str(e)}"
         }
 
+def search_source_in_db(session, source_name: str = None, source_id: str = None, base_url: str = None):
+    """
+    Searches for source entries in the database based on the given filters.
+
+    Args:
+        session (Session): The SQLAlchemy session object.
+        source_name (str, optional): The name of the source to search for.
+        source_id (str, optional): The source ID to search for.
+        base_url (str, optional): The base URL of the source to search for.
+
+    Returns:
+        dict: A dictionary containing the search results or an error message.
+    """
+    try:
+        # Start the query
+        query = session.query(Source)
+        
+        # Apply filters if provided
+        if source_name:
+            query = query.filter(Source.name.ilike(f"%{source_name.strip()}%"))
+        if source_id:
+            if isinstance(source_id, str):
+                source_id = UUID(source_id)
+            query = query.filter(Source.id == source_id)
+        if base_url:
+            query = query.filter(Source.base_url.ilike(f"%{base_url.strip()}%"))
+        
+        # Execute the query and fetch all matching results
+        results = query.all()
+
+        # Check if any results were found
+        if results:
+            return {
+                "status": "success",
+                "message": f"Found {len(results)} source entry/entries matching the criteria.",
+                "sources": results  # Return the source objects themselves
+            }
+        else:
+            return {
+                "status": "success",
+                "message": "No source entries found matching the criteria.",
+                "sources": []
+            }
+    except SQLAlchemyError as e:
+        return {
+            "status": "error",
+            "message": f"An error occurred while searching for source entries: {str(e)}"
+        }
