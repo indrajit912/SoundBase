@@ -3,13 +3,18 @@
 # Author: Indrajit Ghosh
 # Created On: Jan 02, 2025
 # 
+import subprocess
 import yt_dlp
 from pathlib import Path
+
 
 def download_audio(url, output_path):
     """
     Downloads the audio from a given YouTube URL, extracts it in MP3 format,
     embeds metadata, and adds a thumbnail if available, saving it to the specified path.
+    
+    If the 'yt-dlp' command is available, it will use the command-line tool. Otherwise,
+    it will fall back to using the yt-dlp Python library.
 
     Args:
         url (str): The YouTube video URL from which to download the audio.
@@ -17,11 +22,6 @@ def download_audio(url, output_path):
 
     Returns:
         None: Downloads the audio and saves it as a file in the specified directory.
-        
-    Postprocessing Options:
-        - Converts audio to MP3 format with a preferred quality of 192 kbps.
-        - Extracts and adds metadata to the audio file.
-        - Embeds the video thumbnail in the audio file (if available).
     """
     # Convert the output_path to a Path object (if it's not already)
     output_path = Path(output_path)
@@ -29,6 +29,14 @@ def download_audio(url, output_path):
     # Ensure the output path exists
     output_path.mkdir(parents=True, exist_ok=True)
 
+    # Check if the 'yt-dlp' command exists using subprocess
+    try:
+        subprocess.run(['yt-dlp', '--version'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        command_line_available = True
+    except subprocess.CalledProcessError:
+        command_line_available = False
+
+    # Define options for yt-dlp
     ydl_opts = {
         'format': 'bestaudio[ext=mp3]/best',  # Ensure the best audio quality in MP3 format
         'writethumbnail': True,  # Download thumbnail image
@@ -40,8 +48,22 @@ def download_audio(url, output_path):
         ],
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+    if command_line_available:
+        # If yt-dlp command-line tool is available, use it
+        print("Using yt-dlp command-line tool...")
+        subprocess.run([
+            'yt-dlp', 
+            '--embed-thumbnail', 
+            '--extract-audio', 
+            '--audio-format', 'mp3', 
+            '--output', str(output_path / '%(title)s.%(ext)s'), 
+            url
+        ])
+    else:
+        # If yt-dlp command-line tool is not available, use the Python yt-dlp library
+        print("Using yt-dlp Python library...")
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
 
 def main():
     dir = Path.home() / "Downloads"
