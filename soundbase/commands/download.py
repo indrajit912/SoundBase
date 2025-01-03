@@ -32,8 +32,10 @@ def download():
     
     Example usage:
         $ soundbase download media --id "sdklfj-dfslkdkdfs-dsfkldsf-dfs"
-        $ soundbase download media --url "http://example.com"
-        $ soundbase download db --download_dir "/media/jellyfin"                 
+        $ soundbase download media --url "http://example.com"       
+        $ soundbase download media -all         # This will download all media
+
+        $ soundbase download db --download_dir "/media/jellyfin"          
     """
     pass
 
@@ -41,7 +43,8 @@ def download():
 @click.option('-id', '--media_id', type=str, help="ID of the media to download")
 @click.option('-u', '--url', type=str, help="URL of the media to download")
 @click.option('-dir', '--media_dir', type=str, help="Directory to save the downloaded media")
-def media(media_id, url, media_dir):
+@click.option('-all', '--download_all', is_flag=True, help="Download all media from the database")
+def media(media_id, url, media_dir, download_all):
     """
     Download media from the provided ID or URL.
 
@@ -52,6 +55,32 @@ def media(media_id, url, media_dir):
     print_basic_info()
     assert_db_init()
 
+    # Set the directory to download the media
+    if not media_dir:
+        # Get the media dir from db
+        system_info = local_session.query(SystemInfo).first()
+        media_dir = system_info.media_dir if system_info else DEFAULT_MEDIA_DIR
+
+    if download_all:
+        # Download all media from the Media table
+        all_media = session.query(Media).all()
+
+        if not all_media:
+            console.print(Panel("No media found in the database.", style="bold red"))
+            return
+
+        console.print(Panel(f"Found {len(all_media)} media entries. Starting download...", style="bold green"))
+
+        for media in all_media:
+            try:
+                console.print(f"Downloading: {media.title} ({media.id}) - {media.url}", style="bold blue")
+                download_audio(url=media.url, output_path=media_dir)
+            except Exception as e:
+                console.print(Panel(f"Error downloading media '{media.title}': {e}", style="bold red"))
+        
+        console.print(f"All media downloaded successfully in {media_dir}.", style="bold green")
+        return
+
     # Ensure only one of media_id or url is provided
     if not (media_id or url):
         console.print(Panel("Error: Please provide either media ID or URL to download media.", style="bold red"))
@@ -59,12 +88,6 @@ def media(media_id, url, media_dir):
     if media_id and url:
         console.print(Panel("Error: Please provide only one of media ID or URL, not both.", style="bold red"))
         return
-
-    # Set the directory to download the media
-    if not media_dir:
-        # Get the media dir from db
-        system_info = local_session.query(SystemInfo).first()
-        media_dir = system_info.media_dir
 
     # If media_id is provided, retrieve media info from the database
     if media_id:
