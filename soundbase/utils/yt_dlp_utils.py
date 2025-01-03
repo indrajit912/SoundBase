@@ -52,11 +52,16 @@ def download_audio(url, output_path):
         # If yt-dlp command-line tool is available, use it
         print("Using yt-dlp command-line tool...")
         subprocess.run([
-            'yt-dlp', 
+            'yt-dlp', '-f', 'bestaudio',
+            '--continue',
+            '--ignore-errors',
             '--embed-thumbnail', 
-            '--extract-audio', 
-            '--audio-format', 'mp3', 
-            '--output', str(output_path / '%(title)s.%(ext)s'), 
+            '--extract-audio',
+            '--audio-quality', '0',
+            '--audio-format', 'mp3',
+            '--embed-metadata',
+            '--output', str(output_path / '%(title)s.%(ext)s'),
+            '--sponsorblock-remove', 'all',
             url
         ])
     else:
@@ -67,7 +72,7 @@ def download_audio(url, output_path):
 
 def main():
     dir = Path.home() / "Downloads"
-    download_audio('https://www.youtube.com/watch?v=S9bCLPwzSC0', dir)
+    download_audio('https://www.youtube.com/watch?v=ehZFyxRbyd0', dir)
 
 if __name__ == '__main__':
     main()
