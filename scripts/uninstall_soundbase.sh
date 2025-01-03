@@ -103,3 +103,12 @@ fi
 # Step 6: Final cleanup
 print_message "Uninstallation complete!"
 print_message "Please restart your terminal or run 'source ~/.bashrc' or 'source ~/.zshrc' to apply changes."
+
+THIS_SCRIPT="$HOME/Downloads/uninstall_soundbase.sh"
+if [ -f "$THIS_SCRIPT" ]; then
+    echo "$THIS_SCRIPT exists. Deleting..."
+    rm "$THIS_SCRIPT"
+    echo "$THIS_SCRIPT has been deleted."
+else
+    echo "$THIS_SCRIPT does not exist."
+fi

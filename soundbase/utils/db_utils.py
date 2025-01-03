@@ -234,12 +234,12 @@ def update_media_in_db(session, media_id, title: str = None, url: str = None, so
             # Update fields if the new values are provided
             updated_fields = {}
             if title:
-                media.title = title
-                updated_fields["title"] = title
+                media.title = title.strip()
+                updated_fields["title"] = title.strip()
             if url:
-                media.url = url
+                media.url = url.strip().rstrip('/')
                 media.hash = sha256_hash(url)  # Recalculate hash if URL is updated
-                updated_fields["url"] = url
+                updated_fields["url"] = url.strip().rstrip('/')
             if source_id:
                 media.source_id = source_id
                 updated_fields["source_id"] = source_id
@@ -295,11 +295,11 @@ def update_source_in_db(session, source_id, name: str = None, base_url: str = No
             # Update fields if the new values are provided
             updated_fields = {}
             if name:
-                source.name = name
-                updated_fields["name"] = name
+                source.name = name.strip()
+                updated_fields["name"] = name.strip()
             if base_url:
-                source.base_url = base_url
-                updated_fields["base_url"] = base_url
+                source.base_url = base_url.strip().rstrip('/')
+                updated_fields["base_url"] = base_url.strip().rstrip('/')
             
             # Commit the changes
             session.commit()

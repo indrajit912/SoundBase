@@ -50,8 +50,27 @@ def init_db():
             console.rule("[bold cyan]SoundBase Initialization[/bold cyan]")
             console.print("\n")
             
-            # Create SoundBase db
-            create_soundbase_db()
+            # Ask the user if they have their `soundbase.db` file from a past installation.
+            # If not then create SoundBase db else cp that to DOT_SOUNDBASE_DIR
+            res = Prompt.ask("[-] Do you have an existing `soundbase.db`? (y/n)")
+            if res.lower() == 'y':
+                # Ask the user to enter the path of the existing database file
+                db_path = Prompt.ask("[-] Enter the full path of your existing `soundbase.db`")
+                
+                # Validate if the provided path exists and is a valid file
+                if not os.path.isfile(db_path):
+                    console.print(Panel("[bold red]Invalid file path. Please provide a valid file.[/bold red]", border_style="red"))
+                    return
+                
+                # Copy that file to DOT_SOUNDBASE_DIR
+                try:
+                    shutil.copy(db_path, DOT_SOUNDBASE_DIR)
+                    console.print(Panel("[bold green]Existing database copied successfully.[/bold green]", border_style="green"))
+                except Exception as e:
+                    console.print(Panel(f"[bold red]Error copying database file: {str(e)}[/bold red]", border_style="red"))
+                    return
+            else:
+                create_soundbase_db()
 
             # Create the local db
             create_local_db()
