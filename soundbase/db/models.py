@@ -9,6 +9,7 @@ import psutil
 from datetime import datetime
 
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Integer
+from sqlalchemy import Table as SQLAlchemyTable
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import validates
@@ -86,6 +87,86 @@ class Source(Base):
 
         console.print(Panel(table, title=f"{count_display}{self.name}", title_align="left", border_style="bright_blue"))
 
+# Define the association table for the many-to-many relationship
+album_media_association = SQLAlchemyTable(
+    "album_media",
+    Base.metadata,
+    Column("album_id", UUID(as_uuid=True), ForeignKey("album.id"), primary_key=True),
+    Column("media_id", UUID(as_uuid=True), ForeignKey("media.id"), primary_key=True)
+)
+
+class Album(Base):
+    """
+    Represents an album containing media entries (music or video).
+    
+    Attributes:
+        id (UUID): The unique identifier for the album.
+        name (str): The name of the album.
+        created_on (datetime): Timestamp of when the album was created.
+        last_modified (datetime): Timestamp of when the album was last modified.
+
+    Relationships:
+        media (relationship): A many-to-many relationship with the Media model.
+    """
+    __tablename__ = 'album'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # Unique UUID for each album
+    name = Column(String(100), nullable=False, unique=True)  # Name of the album
+    created_on = Column(DateTime, default=utcnow)  # Timestamp of creation
+    last_modified = Column(DateTime, default=utcnow, onupdate=utcnow)  # Last modification timestamp
+
+    media = relationship("Media", secondary=album_media_association, back_populates="albums")  # Relationship with Media
+
+    def __repr__(self):
+        return f"<Album(id={self.id}, name={self.name})>"
+
+    def json(self):
+        """
+        Converts the Album instance into a JSON-compatible dictionary.
+        """
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "created_on": self.created_on.isoformat(),
+            "last_modified": self.last_modified.isoformat() if self.last_modified else None,
+            "media": [m.id for m in self.media]  # List of associated media IDs
+        }
+    
+    def print_on_screen(self, count=None):
+        """
+        Prints the details of the Album instance on the screen in a structured format.
+
+        Args:
+            count (int, optional): A number to display as an index for the album.
+        """
+        console = Console()
+
+        # Create a Rich table to display album details
+        table = Table(title=f"Album {count}: {self.name}" if count else f"Album: {self.name}", style="cyan")
+        table.add_column("Field", style="bold magenta", justify="right")
+        table.add_column("Value", style="white", justify="left")
+
+        # Add album details to the table
+        table.add_row("ID", str(self.id))
+        table.add_row("Name", self.name)
+        created_on_iso = self.created_on.isoformat()
+        created_on_str = convert_utc_to_local_str(datetime.fromisoformat(created_on_iso))
+        table.add_row("Created On", created_on_str)
+        last_modified_iso = self.last_modified.isoformat()
+        last_modified_str = convert_utc_to_local_str(datetime.fromisoformat(last_modified_iso))
+        table.add_row("Last Modified", last_modified_str)
+
+        # Add associated media IDs
+        if self.media:
+            media_ids = "\n".join([str(m.id) for m in self.media])
+            table.add_row("Media", media_ids)
+        else:
+            table.add_row("Media", "No media associated")
+
+        # Display the table using Rich
+        console.print(Panel(table, title=f"Album {count}" if count else "Album Details", border_style="green"))
+
+
 class Media(Base):
     """
     Represents a media entry (music or video) in the database.
@@ -111,6 +192,7 @@ class Media(Base):
     last_modified = Column(DateTime, default=utcnow, onupdate=utcnow)  # Last modification timestamp
 
     source = relationship("Source", back_populates="media")  # Establishes a relationship with Source
+    albums = relationship("Album", secondary=album_media_association, back_populates="media")  # Relationship with Album
 
     def __repr__(self):
         return f"<Media(id={self.id}, url={self.url}, source={self.source.name})>"
@@ -125,6 +207,7 @@ class Media(Base):
             "title": self.title,
             "source_id": str(self.source_id),
             "added_on": self.added_on.isoformat(),
+            "albums": [album.id for album in self.albums],  # List of associated album IDs
             "last_modified": self.last_modified.isoformat() if self.last_modified else None,
             "source": self.source.json()  # Include the source information in the JSON response
         }
@@ -171,6 +254,14 @@ class Media(Base):
         table.add_row("Source Name", f"[bold yellow]{source.name}[/bold yellow]")
         table.add_row("Source ID", f"[bright_white]{str(self.source_id)}[/bright_white]")
         table.add_row("Source Base URL", f"[bright_cyan]{source.base_url}[/bright_cyan]")
+
+        # Add albums row
+        if self.albums:
+            album_names = ", ".join(f"[bold magenta]{album.name}[/bold magenta]" for album in self.albums)
+            table.add_row("Albums", album_names)
+        else:
+            table.add_row("Albums", "[italic bright_red]No associated albums[/italic bright_red]")
+
 
         console.print(Panel(table, title=f"{count_display}{self.id}", title_align="left", border_style="bright_blue"))
 

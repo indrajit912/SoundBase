@@ -9,7 +9,7 @@ from rich.console import Console
 
 from soundbase.db.database import session
 from soundbase.db.models import Source
-from soundbase.utils.db_utils import update_media_in_db, update_source_in_db
+from soundbase.utils.db_utils import update_media_in_db, update_source_in_db, update_album_in_db
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
 
 console = Console()
@@ -17,11 +17,14 @@ console = Console()
 @click.group()
 def update():
     """
-    Provides update commands to modify information stored in the Soundbase database.
+    This script provides commands for updating various entities in the Soundbase database.
 
-    Available Commands:
-    - `media`: Update media details by ID (e.g., title, URL, or source ID).
-    - `source`: Update source information.
+    The following entities can be updated:
+    1. **Media**: Modify details of a media entry (e.g., title, URL, source ID, associated albums).
+    2. **Source**: Update information related to a media source (e.g., name, base URL).
+    3. **Album**: Modify album details and associated media entries.
+
+    The available commands allow for selective updates, such as updating a specific field or associating albums or media with other entities.
 
     Examples:
         # Update the URL of a media entry with the specified ID
@@ -29,13 +32,21 @@ def update():
 
         # Update the title of a media entry with the specified ID
         $ soundbase update media --media_id 7c691b98-9d9a-4246-bf3a-b66fa94a4d96 --title <new_title>
-        
-        # Update the source of a media entry by selecting a new source interactively by using the 
-        # flag --source_id (or -sid).
+
+        # Update the source of a media entry by selecting a new source interactively
         $ soundbase update media --media_id 7c691b98-9d9a-4246-bf3a-b66fa94a4d96 --source_id
 
-        # Update source
-        $ soundbase update source -id 7c691b98-9d9a-4246-bf3a-b66fa94a4d96 --name <new_name> --base_url "New name here"
+        # Update a source
+        $ soundbase update source --id 7c691b98-9d9a-4246-bf3a-b66fa94a4d96 --name <new_name> --base_url "New base URL"
+
+        # Update the name of an album with the specified ID
+        $ soundbase update album --album_id 7c691b98-9d9a-4246-bf3a-b66fa94a4d96 --name <new_name>
+
+        # Associate new media entries with an album
+        $ soundbase update album --album_id 7c691b98-9d9a-4246-bf3a-b66fa94a4d96 --media-ids id1 id2
+
+        # Update the name of an album and associate new media entries
+        $ soundbase update album --album_id 7c691b98-9d9a-4246-bf3a-b66fa94a4d96 --name <new_name> --media-ids id1 id2
     """
     pass
 
@@ -45,7 +56,14 @@ def update():
 @click.option('-t', '--title', type=str, help="New title of the media")
 @click.option('-u', '--url', type=str, help="New URL of the media")
 @click.option('-sid', '--source_id', is_flag=True, help="Flag to update the source ID of the media")
-def media(media_id, title, url, source_id):
+@click.option('-aids', '--album_ids', type=str, multiple=True, help="Comma-separated list of album IDs to associate with the media")
+@click.option(
+    '-a', '--album-ids',
+    multiple=True,
+    default=None,
+    help='List of album IDs to associate with the media (e.g., -a id1 -a id2)'
+)
+def media(media_id, title, url, source_id, album_ids):
     """
     Update media details in the database.
     
@@ -54,14 +72,15 @@ def media(media_id, title, url, source_id):
         - title: New title for the media (optional)
         - url: New URL for the media (optional)
         - source_id: Flag to select a new source ID for the media (optional)
+        - album_ids: List of album IDs to associate with the media (optional)
     """
     # Ensure database is initialized and print basic info
     print_basic_info()
     assert_db_init()
 
     # Ensure at least one field is provided to update
-    if not any([title, url, source_id]):
-        console.print(Panel("Error: Please provide at least one field to update (title, URL, or source_id).", style="bold red"))
+    if not any([title, url, source_id, album_ids]):
+        console.print(Panel("Error: Please provide at least one field to update (title, URL, source_id, or album_ids).", style="bold red"))
         return
 
     selected_source_id = None
@@ -93,12 +112,65 @@ def media(media_id, title, url, source_id):
 
     try:
         # Call the update_media_in_db function
-        result = update_media_in_db(session=session, media_id=media_id, title=title, url=url, source_id=selected_source_id)
+        result = update_media_in_db(
+            session=session,
+            media_id=media_id,
+            title=title,
+            url=url,
+            source_id=selected_source_id,
+            album_ids=list(album_ids) if album_ids else None
+        )
 
         # Check the result and provide feedback to the user
         if result["status"] == "success":
             updated_fields = ", ".join([f"{key}: {value}" for key, value in result["updated_fields"].items()])
             console.print(Panel(f"Success: Media with ID {media_id} updated.\nUpdated fields: {updated_fields}", style="bold green"))
+        else:
+            console.print(Panel(f"Error: {result['message']}", style="bold red"))
+
+    except Exception as e:
+        console.print(Panel(f"Unexpected error: {e}", style="bold red"))
+
+@update.command()
+@click.option('-id', '--album_id', required=True, type=str, help="ID of the album to update")
+@click.option('-n', '--name', type=str, help="New name of the album")
+@click.option(
+    '-m', '--media-ids',
+    multiple=True,
+    default=None,
+    help='List of media IDs to associate with the album (e.g., -m id1 -m id2)'
+)
+def album(album_id, name, media_ids):
+    """
+    Update album details in the database.
+    
+    Parameters:
+        - album_id: ID of the album to update (required)
+        - name: New name for the album (optional)
+        - media_ids: List of media IDs to associate with the album (optional)
+    """
+    # Ensure database is initialized and print basic info
+    print_basic_info()
+    assert_db_init()
+
+    # Ensure at least one field is provided to update
+    if not any([name, media_ids]):
+        console.print(Panel("Error: Please provide at least one field to update (name or media_ids).", style="bold red"))
+        return
+
+    try:
+        # Call the update_album_in_db function
+        result = update_album_in_db(
+            session=session,
+            album_id=album_id,
+            name=name,
+            media_ids=list(media_ids) if media_ids else None
+        )
+
+        # Check the result and provide feedback to the user
+        if result["status"] == "success":
+            updated_fields = ", ".join([f"{key}: {value}" for key, value in result["updated_fields"].items()])
+            console.print(Panel(f"Success: Album with ID {album_id} updated.\nUpdated fields: {updated_fields}", style="bold green"))
         else:
             console.print(Panel(f"Error: {result['message']}", style="bold red"))
 

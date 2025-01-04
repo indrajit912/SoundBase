@@ -9,7 +9,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 from soundbase.db.database import session
-from soundbase.db.models import Media, Source
+from soundbase.db.models import Media, Source, Album
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
 from soundbase.utils.db_utils import add_media_to_db
 
@@ -73,8 +73,34 @@ def add_media(url):
     # Prompt user for the media title
     title = Prompt.ask("Enter the title for the media", default="Untitled")
 
+    # Check if there are albums in the database
+    albums = session.query(Album).all()
+    album_ids = []
+    if albums:
+        console.print("\n[bold green]Available Albums:[/bold green]")
+        for index, album in enumerate(albums, start=1):
+            console.print(f" {index}. {album.name}")
+        console.print(" 0. Skip associating an album")
+
+        while True:
+            album_choice = Prompt.ask("[-] Select an album by number or 0 to skip")
+            if album_choice.isdigit():
+                album_choice = int(album_choice)
+                if album_choice == 0:
+                    console.print("[bold yellow]No album selected. Skipping album association.[/bold yellow]")
+                    break
+                elif 1 <= album_choice <= len(albums):
+                    selected_album = albums[album_choice - 1]
+                    album_ids.append(str(selected_album.id))
+                    console.print(f"[bold cyan]Selected Album:[/bold cyan] {selected_album.name}")
+                    break
+                else:
+                    console.print("[bold red]Invalid choice. Please select a valid album number.[/bold red]")
+            else:
+                console.print("[bold red]Please enter a valid number.[/bold red]")
+
     # Use the add_media_to_db utility function to add the media entry
-    result = add_media_to_db(session, url=url, title=title, source_id=selected_source.id)
+    result = add_media_to_db(session, url=url, title=title, source_id=selected_source.id, album_ids=album_ids)
 
     if result["status"] == "success":
         console.print(Panel(f"[bold green]Media added successfully:[/bold green] {result['media_title']}", border_style="green"))
