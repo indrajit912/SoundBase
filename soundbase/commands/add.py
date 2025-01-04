@@ -11,13 +11,37 @@ from rich.prompt import Prompt
 from soundbase.db.database import session
 from soundbase.db.models import Media, Source, Album
 from soundbase.utils.cli_utils import assert_db_init, print_basic_info
-from soundbase.utils.db_utils import add_media_to_db
+from soundbase.utils.db_utils import add_media_to_db, add_source_to_db, add_album_to_db
 
 console = Console()
 
-@click.command()
+@click.group()
+def add():
+    """
+    Add Command Group.
+
+    The `add` command group provides subcommands to add new entities to the SoundBase database.
+
+    Subcommands:
+    - media: Add new media entries (e.g., songs or videos).
+    - source: Add a new source (e.g., platforms like YouTube or Spotify).
+    - album: Create a new album and optionally associate media entries with it.
+
+    Examples:
+        Add a media entry:
+        $ soundbase add media -u "https://example.com/media.mp4"
+
+        Add a new source:
+        $ soundbase add source -n "YouTube" -u "https://youtube.com"
+
+        Create a new album and associate media entries:
+        $ soundbase add album -n "Favorites 2025" -m id1 -m id2
+    """
+    pass
+
+@add.command()
 @click.option('-u', '--url', required=True, help='URL of the media (music/video)')
-def add(url):
+def media(url):
     """
     Add a new media entry to the SoundBase database.
 
@@ -106,3 +130,82 @@ def add_media(url):
         console.print(Panel(f"[bold green]Media added successfully:[/bold green] {result['media_title']}", border_style="green"))
     else:
         console.print(Panel(f"[bold red]Error adding media: {result['message']}[/bold red]", border_style="red"))
+
+
+@add.command()
+@click.option('-n', '--name', required=True, help='Name of the new source (e.g., YouTube)')
+@click.option('-u', '--url', required=True, help='Base URL of the new source (e.g., https://youtube.com)')
+def source(name, url):
+    """
+    Add a new source to the SoundBase database.
+
+    This command allows the user to create a new source (e.g., a website for music or video 
+    downloads) in the database. A source is identified by its name and base URL. If the source 
+    already exists, the user will be notified, and no new source will be created.
+
+    Args:
+        name (str): The name of the source, e.g., 'YouTube'.
+        url (str): The base URL of the source, e.g., 'https://youtube.com'.
+
+    Example:
+        $ soundbase add_source --name "YouTube" --url "https://youtube.com"
+    """
+    print_basic_info()
+    assert_db_init()
+
+    # Check if the source already exists
+    existing_source = session.query(Source).filter(Source.name == name).first()
+
+    if existing_source:
+        console.print(Panel(f"[bold yellow]Source '{name}' already exists.[/bold yellow]", border_style="yellow"))
+        return
+
+    # Create and add the new source
+    result = add_source_to_db(session=session, name=name, base_url=url)
+    
+    if result["status"] == "success":
+        console.print(Panel(f"[bold green]Source '{name}' created successfully.[/bold green]", border_style="green"))
+    else:
+        console.print(Panel(f"[bold red]Error creating source: {result['message']}[/bold red]", border_style="red"))
+
+@add.command()
+@click.option('-n', '--name', required=True, help='Name of the new album (e.g., "Best of 2025")')
+@click.option(
+    '-m', '--media-ids',
+    multiple=True,
+    default=None,
+    help='List of media IDs to associate with the album (e.g., -m id1 -m id2)'
+)
+def album(name, media_ids):
+    """
+    Add a new album to the SoundBase database.
+
+    This command allows the user to create a new album in the database. Optionally, 
+    media entries can be associated with the album using their UUIDs. If the album 
+    already exists, the user will be notified, and no new album will be created.
+
+    Args:
+        name (str): The name of the album, e.g., "Best of 2025".
+        media_ids (list): A list of UUIDs representing media entries to associate 
+                          with the album.
+
+    Example:
+        $ soundbase add_album --name "Best of 2025" --media-ids id1 id2
+    """
+    print_basic_info()
+    assert_db_init()
+
+    # Check if the album already exists
+    existing_album = session.query(Album).filter(Album.name == name).first()
+
+    if existing_album:
+        console.print(Panel(f"[bold yellow]Album '{name}' already exists.[/bold yellow]", border_style="yellow"))
+        return
+
+    # Create and add the new album
+    result = add_album_to_db(session=session, name=name, media_ids=list(media_ids))
+
+    if result["status"] == "success":
+        console.print(Panel(f"[bold green]Album '{name}' created successfully.[/bold green]", border_style="green"))
+    else:
+        console.print(Panel(f"[bold red]Error creating album: {result['message']}[/bold red]", border_style="red"))

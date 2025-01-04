@@ -3,7 +3,7 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-from soundbase.commands import init, add, add_source, list, delete, local, search, download, update, add_album
+from soundbase.commands import init, add, list, delete, local, search, download, update
 from soundbase.utils.cli_utils import print_basic_info
 
 console = Console()
@@ -26,8 +26,6 @@ def cli():
 cli.add_command(init.init)
 cli.add_command(help, name='help')
 cli.add_command(add.add)
-cli.add_command(add_source.add_source)
-cli.add_command(add_album.add_album)
 cli.add_command(list.list)
 cli.add_command(search.search)
 cli.add_command(update.update)
